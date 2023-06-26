@@ -23,7 +23,8 @@ NVCC_FLAGS += [f"-D_GLIBCXX_USE_CXX11_ABI={ABI}"]
 if not torch.cuda.is_available():
     raise RuntimeError(
         f"Cannot find CUDA at CUDA_HOME: {CUDA_HOME}. "
-        "CUDA must be available in order to build the package.")
+        "CUDA must be available in order to build the package."
+    )
 
 
 def get_nvcc_cuda_version(cuda_dir: str) -> Version:
@@ -31,8 +32,9 @@ def get_nvcc_cuda_version(cuda_dir: str) -> Version:
 
     Adapted from https://github.com/NVIDIA/apex/blob/8b7a1ff183741dd8f9b87e7bafd04cfde99cea28/setup.py
     """
-    nvcc_output = subprocess.check_output([cuda_dir + "/bin/nvcc", "-V"],
-                                          universal_newlines=True)
+    nvcc_output = subprocess.check_output(
+        [cuda_dir + "/bin/nvcc", "-V"], universal_newlines=True
+    )
     output = nvcc_output.split()
     release_idx = output.index("release") + 1
     nvcc_cuda_version = parse(output[release_idx].split(",")[0])
@@ -46,7 +48,8 @@ for i in range(device_count):
     major, minor = torch.cuda.get_device_capability(i)
     if major < 7:
         raise RuntimeError(
-            "GPUs with compute capability less than 7.0 are not supported.")
+            "GPUs with compute capability less than 7.0 are not supported."
+        )
     compute_capabilities.add(major * 10 + minor)
 # If no GPU is available, add all supported compute capabilities.
 if not compute_capabilities:
@@ -61,10 +64,12 @@ if nvcc_cuda_version < Version("11.0"):
     raise RuntimeError("CUDA 11.0 or higher is required to build the package.")
 if 86 in compute_capabilities and nvcc_cuda_version < Version("11.1"):
     raise RuntimeError(
-        "CUDA 11.1 or higher is required for GPUs with compute capability 8.6.")
+        "CUDA 11.1 or higher is required for GPUs with compute capability 8.6."
+    )
 if 90 in compute_capabilities and nvcc_cuda_version < Version("11.8"):
     raise RuntimeError(
-        "CUDA 11.8 or higher is required for GPUs with compute capability 9.0.")
+        "CUDA 11.8 or higher is required for GPUs with compute capability 9.0."
+    )
 
 # Use NVCC threads to parallelize the build.
 if nvcc_cuda_version >= Version("11.2"):
@@ -113,6 +118,14 @@ activation_extension = CUDAExtension(
 )
 ext_modules.append(activation_extension)
 
+# Fuse Softmax kernels.
+fusesoftmax_extension = CUDAExtension(
+    name="vllm.fuse_softmax_ops",
+    sources=["csrc/fuse_softmax.cpp", "csrc/fuse_softmax_kernels.cu"],
+    extra_compile_args={"cxx": CXX_FLAGS, "nvcc": NVCC_FLAGS},
+)
+ext_modules.append(fusesoftmax_extension)
+
 
 def get_path(*filepath) -> str:
     return os.path.join(ROOT_DIR, *filepath)
@@ -125,7 +138,8 @@ def find_version(filepath: str):
     """
     with open(filepath) as fp:
         version_match = re.search(
-            r"^__version__ = ['\"]([^'\"]*)['\"]", fp.read(), re.M)
+            r"^__version__ = ['\"]([^'\"]*)['\"]", fp.read(), re.M
+        )
         if version_match:
             return version_match.group(1)
         raise RuntimeError("Unable to find version string.")
@@ -164,7 +178,8 @@ setuptools.setup(
         "Topic :: Scientific/Engineering :: Artificial Intelligence",
     ],
     packages=setuptools.find_packages(
-        exclude=("assets", "benchmarks", "csrc", "docs", "examples", "tests")),
+        exclude=("assets", "benchmarks", "csrc", "docs", "examples", "tests")
+    ),
     python_requires=">=3.8",
     install_requires=get_requirements(),
     ext_modules=ext_modules,
